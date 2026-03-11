@@ -43,6 +43,7 @@ void setup() {
         Serial.println(WiFi.localIP());
     } else {
         Serial.println("\nFailed to connect to WiFi");
+        while (true) {}
     }
     
     wSerial.begin();

@@ -43,6 +43,7 @@ void setup() {
         Serial.println("Send UDP packets to port 8888");
     } else {
         Serial.println("\nFailed to connect to WiFi");
+        while (true) {}
     }
     
     // Start UDP server

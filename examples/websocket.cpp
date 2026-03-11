@@ -45,6 +45,7 @@ void setup() {
         Serial.println("/ws");
     } else {
         Serial.println("\nFailed to connect to WiFi");
+        while (true) {}
     }
     
     // Start server and WebSerial
