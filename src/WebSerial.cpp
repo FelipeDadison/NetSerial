@@ -2,8 +2,8 @@
  * @file WebSerial.cpp
  * @brief Implementation of multi-protocol Serial communication for ESP32
  * @author Felipe Dadison
- * @version 1.0.0
- * @date 2026-03-10
+ * @version 1.0.1
+ * @date 2026-07-14
  * 
  * Implements TCP, WebSocket, and UDP transport layers for the WebSerial class.
  * Manages async client connections, ring buffers, and protocol-specific event handling.
@@ -254,14 +254,20 @@ void WebSerial::onWsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client,
                           AwsEventType type, void* arg, uint8_t* data, size_t len) {
     switch (type) {
         case WS_EVT_CONNECT:
+            if (_bufferMutex) xSemaphoreTake(_bufferMutex, portMAX_DELAY);
             _wsClients.push_back(client);
+            if (_bufferMutex) xSemaphoreGive(_bufferMutex);
+            if (_wsKeepAliveSeconds > 0) client->keepAlivePeriod(_wsKeepAliveSeconds);
+            client->client()->setAckTimeout(WS_ACK_TIMEOUT_MS);
         break;
 
         case WS_EVT_DISCONNECT:
+            if (_bufferMutex) xSemaphoreTake(_bufferMutex, portMAX_DELAY);
             _wsClients.erase(
                 std::remove(_wsClients.begin(), _wsClients.end(), client),
                 _wsClients.end()
             );
+            if (_bufferMutex) xSemaphoreGive(_bufferMutex);
         break;
 
         case WS_EVT_DATA:
@@ -271,6 +277,10 @@ void WebSerial::onWsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client,
         default:
         break;
     }
+}
+
+void WebSerial::keepAlive(uint16_t seconds) {
+    _wsKeepAliveSeconds = seconds;
 }
 
 void WebSerial::onUdpPacket(AsyncUDPPacket& packet) {
@@ -290,13 +300,25 @@ void WebSerial::flushWSBuffer() {
 
     if (xSemaphoreTake(_bufferMutex, portMAX_DELAY)) {
         if (_wsSendBuffer.length() > 0) {
-            for (auto* c : _wsClients) {
-                if (c && c->canSend()) {
-                    c->text(_wsSendBuffer);
+            if (_wsClients.empty()) {
+                _wsSendBuffer = "";
+            } else {
+                bool sent = false;
+                for (auto* c : _wsClients) {
+                    if (c && c->canSend()) {
+                        c->text(_wsSendBuffer);
+                        sent = true;
+                    }
+                }
+                if (sent) {
+                    _wsSendBuffer = "";
+                }
+                // Client busy (send queue full): keep the buffer and retry on
+                // the next flush tick; discard past 4 KB to prevent OOM.
+                else if (_wsSendBuffer.length() > 4096) {
+                    _wsSendBuffer = "";
                 }
             }
-
-            _wsSendBuffer = "";
         }
 
         xSemaphoreGive(_bufferMutex);

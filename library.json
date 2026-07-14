@@ -1,6 +1,6 @@
 {
   "name": "WebSerial",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Multi-protocol Serial communication wrapper for ESP32 supporting TCP, WebSocket, and UDP transports with Arduino Stream interface",
   "keywords": [
     "serial",

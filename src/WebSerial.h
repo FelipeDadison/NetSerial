@@ -2,8 +2,8 @@
  * @file WebSerial.h
  * @brief Multi-protocol Serial communication wrapper for ESP32 (TCP, WebSocket, UDP)
  * @author Felipe Dadison
- * @version 1.0.0
- * @date 2026-03-10
+ * @version 1.0.1
+ * @date 2026-07-14
  * 
  * WebSerial provides a unified Stream interface supporting TCP, WebSocket, and UDP
  * communication protocols for ESP32 devices. It implements the Arduino Stream class
@@ -122,7 +122,14 @@ class WebSerial : public Stream {
          * @param timeout Timeout in milliseconds
          */
         void setTimeout(unsigned long timeout);
-        
+
+        /**
+         * @brief Set WebSocket keep-alive ping interval
+         * Applied to every client at connect time. 0 disables (default).
+         * @param seconds Ping interval in seconds
+         */
+        void keepAlive(uint16_t seconds);
+
         /**
          * @brief Get the current read timeout duration
          * @return Timeout in milliseconds
@@ -143,12 +150,16 @@ class WebSerial : public Stream {
         AsyncWebSocket* _ws = nullptr;
         AsyncWebServer* _parentServer = nullptr;
         std::vector<AsyncWebSocketClient*> _wsClients;
+        uint16_t _wsKeepAliveSeconds = 0;
 
         SemaphoreHandle_t _bufferMutex = nullptr;
         esp_timer_handle_t _flushTimer = nullptr;
 
         String _wsSendBuffer = "";
         const unsigned long WS_FLUSH_INTERVAL_MS = 25;
+        // AsyncTCP defaults to a 5 s ack timeout, which kills WS clients
+        // during TCP stalls that would recover on their own.
+        const uint32_t WS_ACK_TIMEOUT_MS = 30000;
 
         AsyncUDP* _udpServer = nullptr;
         uint16_t _udpPort = 0;
