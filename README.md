@@ -6,12 +6,20 @@ Since `NetSerial` is a `Stream`, everything you use with `Serial` works the same
 
 ## Installation
 
+### PlatformIO
+
 Add to your `platformio.ini`:
 
 ```ini
 lib_deps =
     https://github.com/FelipeDadison/NetSerial.git
 ```
+
+### Arduino IDE
+
+Download the ZIP from the [latest release](https://github.com/FelipeDadison/NetSerial/releases/latest), then use *Sketch → Include Library → Add .ZIP Library...*.
+
+Also install **Async TCP** and **ESP Async WebServer** (by ESP32Async) from the Library Manager, since ZIP installs don't add dependencies automatically.
 
 ## Usage
 
