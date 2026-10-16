@@ -1,0 +1,7 @@
+.pio/
+.vscode/
+build/
+
+Thumbs.db
+desktop.ini
+.DS_Store
